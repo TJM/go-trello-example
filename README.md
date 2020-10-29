@@ -9,7 +9,6 @@ Prerequisites:
 * Retrieve your `appKey`: <https://trello.com/app-key> (NOTE: This identifies "you" as the developer of the application)
 * Retrieve your (temporary) `token`: <https://trello.com/1/connect?key=MYKEYFROMABOVE&name=MYAPPNAME&response_type=token&scope=read,write&expiration=1day>
 
-
 Building:
 
 ```bash

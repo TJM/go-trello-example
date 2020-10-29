@@ -41,7 +41,33 @@ Options:
 
 ```
 
-NOTE: The "--delete" flag is required to *actually* delete boards, so you can safely test this.
+NOTE: The `--delete` flag is required to *actually* delete boards, so you can safely test this.
+
+```bash
+[tmcneely@local delete_boards] $ ./delete_boards --contains Patching
+Trello User: Tommy McNeely
+Trello Boards: 20
+Keep:   AFTER: CWOW-DEV System Updates 2020Q3
+Keep:   CWOW-DEV System Updates 2020Q3
+Keep:   Morpheus Features
+Delete: Patching 2019-09-03
+Delete: Patching 2019-10-01
+Delete: Patching 2019-10-29
+Delete: Patching 2019-11-12
+Delete: Patching 2019-12-08
+Delete: Patching 2020-1-22
+Delete: Patching 2020-1-9
+Delete: Patching 2020-2-5
+Delete: Patching 2020-4-15
+Delete: Patching 2020-4-29
+Delete: Patching 2020-5-20
+Delete: Patching 2020-7-22
+Delete: Patching 2020-8-30
+Delete: Patching 2020-8-5
+Delete: Patching 2020-9-30
+Keep:   SDLC Prod 10/15
+Keep:   Welcome Board
+```
 
 ## License
 

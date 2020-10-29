@@ -4,15 +4,22 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 
 	"github.com/TJM/go-trello"
+	"github.com/alexflint/go-arg"
 )
 
 func main() {
+	// Parse Command Line Args
+	var args struct {
+		AppKey string `arg:"required,env:TRELLO_APP_KEY" help:"Trello API App Key, Obtain yours at https://trello.com/app-key ... (env: TRELLO_APP_KEY)"`
+		Token  string `arg:"required,env:TRELLO_TOKEN" help:"Trello API App Key, Authorize your App Key to use your account at <https://trello.com/1/connect?key=<appKey from above>&name=Go-Trello-Example-delete-boards&response_type=token&scope=read,write&expiration=1day> (env: TRELLO_TOKEN)"`
+	}
+	arg.MustParse(&args)
+
 	// New Trello Client
-	appKey := os.Getenv("TRELLO_APP_KEY")
-	token := os.Getenv("TRELLO_TOKEN")
+	appKey := args.AppKey
+	token := args.Token
 	trello, err := trello.NewAuthClient(appKey, &token)
 	if err != nil {
 		log.Fatal(err)

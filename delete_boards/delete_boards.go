@@ -11,8 +11,8 @@ import (
 )
 
 var args struct {
-	AppKey     string `arg:"required,env:TRELLO_APP_KEY" help:"Trello API App Key.\n\t\t\t\t Obtain yours at https://trello.com/app-key\n\t\t\t\t (env: TRELLO_APP_KEY)"`
-	Token      string `arg:"required,env:TRELLO_TOKEN" help:"Trello API App Key.\n\t\t\t\t Authorize your App Key to use your account at <https://trello.com/1/connect?key=<appKey from above>&name=Go-Trello-Example-delete_boards&response_type=token&scope=read,write&expiration=1day>\n\t\t\t\t (env: TRELLO_TOKEN)"`
+	AppKey     string `arg:"required,env:TRELLO_APP_KEY" help:"Trello API App Key.\n\t\t Obtain yours at https://trello.com/app-key\n\t\t (env: TRELLO_APP_KEY)"`
+	Token      string `arg:"required,env:TRELLO_TOKEN" help:"Trello API App Key.\n\t\t Authorize your App Key to use your account at <https://trello.com/1/connect?key=<appKey from above>&name=Go-Trello-Example-delete_boards&response_type=token&scope=read,write&expiration=1day>\n\t\t (env: TRELLO_TOKEN)"`
 	AnyOf      bool   `help:"Match AnyOf the StartsWith, Contains or EndsWith conditions. By default board name must match all of the conditions."`
 	StartsWith string `help:"Select boards to delete that *start with* this string"`
 	Contains   string `help:"Select boards to delete that *contain* this string"`
@@ -59,13 +59,13 @@ func main() {
 		if args.AnyOf {
 			// AnyOf
 			if args.StartsWith != "" && strings.HasPrefix(board.Name, args.StartsWith) {
-				removeBoard(board)
+				removeBoard(board, user)
 			} else if args.Contains != "" && strings.Contains(board.Name, args.Contains) {
-				removeBoard(board)
+				removeBoard(board, user)
 			} else if args.EndsWith != "" && strings.HasSuffix(board.Name, args.EndsWith) {
-				removeBoard(board)
+				removeBoard(board, user)
 			} else {
-				fmt.Println("Keep:   " + board.Name)
+				fmt.Printf("Keep:   %s <%s>\n", board.Name, board.ShortURL)
 			}
 		} else {
 			if args.StartsWith == "" && args.Contains == "" && args.EndsWith == "" { // If no conditions are set, KEEP
@@ -73,9 +73,9 @@ func main() {
 			} else if (args.StartsWith == "" || strings.HasPrefix(board.Name, args.StartsWith)) &&
 				(args.Contains == "" || strings.Contains(board.Name, args.Contains)) &&
 				(args.EndsWith == "" || strings.HasSuffix(board.Name, args.EndsWith)) { // If a condition is set, and matches, DELETE
-				removeBoard(board)
+				removeBoard(board, user)
 			} else { // KEEP by default
-				fmt.Println("Keep:   " + board.Name)
+				fmt.Printf("Keep:   %s\t<%s>\n", board.Name, board.ShortURL)
 			}
 		}
 	}
@@ -85,19 +85,22 @@ func main() {
 	}
 }
 
-func removeBoard(board trello.Board) {
+func removeBoard(board *trello.Board, user *trello.Member) {
 	if args.Delete {
-		fmt.Println("DELETING: '" + board.Name)
-		err := board.Delete()
-		if err != nil {
-			if strings.Contains(err.Error(), "401") { // UNAUTHORIZED (try to leave instead)
-				fmt.Println("Leaving ORG Trello Board: '" + board.Name)
-				fmt.Println("NOTE: board.RemoveMember is not yet implemented! Coming soon?")
-			} else {
+		if board.IsAdmin(user) {
+			fmt.Printf("DELETING: %s\t<%s>\n", board.Name, board.ShortURL)
+			err := board.Delete()
+			if err != nil {
 				fmt.Printf("ERROR Deleting board: %v\n", err)
+			}
+		} else {
+			fmt.Printf("LEAVING: %s\t<%s>\n", board.Name, board.ShortURL)
+			err := board.RemoveMember(user)
+			if err != nil {
+				fmt.Printf("ERROR Leaving board: %v\n", err)
 			}
 		}
 	} else {
-		fmt.Println("Delete: " + board.Name)
+		fmt.Printf("Delete: %s\t<%s>\n", board.Name, board.ShortURL)
 	}
 }

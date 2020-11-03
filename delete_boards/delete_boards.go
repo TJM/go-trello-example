@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Trello User: %v\n", user.FullName)
+	fmt.Printf("Trello User: %s (%s) <%s>\n", user.FullName, user.Username, user.URL)
 
 	// @trello Boards
 	boards, err := user.Boards()
@@ -58,6 +58,7 @@ func main() {
 	fmt.Fprintf(w, "\t------\t----------\t---\n")
 
 	for _, board := range boards {
+		var action string
 		if args.Debug {
 			boardJSON, err := json.MarshalIndent(board, "", "  ")
 			if err != nil {
@@ -68,28 +69,30 @@ func main() {
 		if args.AnyOf {
 			// AnyOf
 			if args.StartsWith != "" && strings.HasPrefix(board.Name, args.StartsWith) {
-				removeBoard(board, user)
+				action = removeBoard(board, user)
 			} else if args.Contains != "" && strings.Contains(board.Name, args.Contains) {
-				removeBoard(board, user)
+				action = removeBoard(board, user)
 			} else if args.EndsWith != "" && strings.HasSuffix(board.Name, args.EndsWith) {
-				removeBoard(board, user)
+				action = removeBoard(board, user)
 			} else {
-				fmt.Fprintf(w, "\tKeep\t%s\t<%s>\n", board.Name, board.ShortURL)
+				action = "KEEP"
 			}
 		} else {
 			if args.StartsWith == "" && args.Contains == "" && args.EndsWith == "" { // If no conditions are set, KEEP
-				fmt.Println("Keep: " + board.Name)
+				action = "KEEP"
 			} else if (args.StartsWith == "" || strings.HasPrefix(board.Name, args.StartsWith)) &&
 				(args.Contains == "" || strings.Contains(board.Name, args.Contains)) &&
 				(args.EndsWith == "" || strings.HasSuffix(board.Name, args.EndsWith)) { // If a condition is set, and matches, DELETE
-				removeBoard(board, user)
+				action = removeBoard(board, user)
 			} else { // KEEP by default
-				fmt.Fprintf(w, "\tKeep\t%s\t<%s>\n", board.Name, board.ShortURL)
+				action = "KEEP"
 			}
 		}
+		fmt.Fprintf(w, "\t%s\t%s\t<%s>\n", action, board.Name, board.ShortURL)
 	}
 
 	// Output Tabwriter Table
+	fmt.Printf("\n")
 	w.Flush()
 
 	if !args.Delete {
@@ -97,22 +100,31 @@ func main() {
 	}
 }
 
-func removeBoard(board *trello.Board, user *trello.Member) {
+func removeBoard(board *trello.Board, user *trello.Member) (action string) {
 	if args.Delete {
 		if board.IsAdmin(user) {
-			fmt.Fprintf(w, "\tDELETING\t%s\t<%s>\n", board.Name, board.ShortURL)
+			fmt.Printf("DELETING: %s <%s> ...\n", board.Name, board.ShortURL)
 			err := board.Delete()
+			action = "DELETED"
 			if err != nil {
 				fmt.Printf("ERROR Deleting board: %v\n", err)
+				action = "ERROR DELETING"
 			}
 		} else {
-			fmt.Fprintf(w, "\tLEAVING\t%s\t<%s>\n", board.Name, board.ShortURL)
+			fmt.Printf("LEAVING:  %s <%s> ...\n", board.Name, board.ShortURL)
 			err := board.RemoveMember(user)
+			action = "LEFT"
 			if err != nil {
 				fmt.Printf("ERROR Leaving board: %v\n", err)
+				action = "ERROR LEAVING"
 			}
 		}
 	} else {
-		fmt.Fprintf(w, "\tDelete\t%s\t<%s>\n", board.Name, board.ShortURL)
+		if board.IsAdmin(user) {
+			action = "DELETE"
+		} else {
+			action = "LEAVE"
+		}
 	}
+	return
 }

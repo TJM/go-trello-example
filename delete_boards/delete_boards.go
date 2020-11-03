@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/TJM/go-trello"
 	"github.com/alexflint/go-arg"
@@ -21,10 +23,15 @@ var args struct {
 	Debug      bool   `help:"Enable debugging output"`
 }
 
+var w *tabwriter.Writer
+
 func main() {
 	// Parse Command Line Args
-
 	arg.MustParse(&args)
+
+	// Tab Writer
+	w = new(tabwriter.Writer)
+	w.Init(os.Stdout, 4, 4, 2, ' ', tabwriter.TabIndent)
 
 	// New Trello Client
 	appKey := args.AppKey
@@ -47,6 +54,8 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Trello Boards: %v\n", len(user.IDBoards))
+	fmt.Fprintf(w, "\tAction\tBoard Name\tURL\n")
+	fmt.Fprintf(w, "\t------\t----------\t---\n")
 
 	for _, board := range boards {
 		if args.Debug {
@@ -65,7 +74,7 @@ func main() {
 			} else if args.EndsWith != "" && strings.HasSuffix(board.Name, args.EndsWith) {
 				removeBoard(board, user)
 			} else {
-				fmt.Printf("Keep:   %s <%s>\n", board.Name, board.ShortURL)
+				fmt.Fprintf(w, "\tKeep\t%s\t<%s>\n", board.Name, board.ShortURL)
 			}
 		} else {
 			if args.StartsWith == "" && args.Contains == "" && args.EndsWith == "" { // If no conditions are set, KEEP
@@ -75,10 +84,13 @@ func main() {
 				(args.EndsWith == "" || strings.HasSuffix(board.Name, args.EndsWith)) { // If a condition is set, and matches, DELETE
 				removeBoard(board, user)
 			} else { // KEEP by default
-				fmt.Printf("Keep:   %s\t<%s>\n", board.Name, board.ShortURL)
+				fmt.Fprintf(w, "\tKeep\t%s\t<%s>\n", board.Name, board.ShortURL)
 			}
 		}
 	}
+
+	// Output Tabwriter Table
+	w.Flush()
 
 	if !args.Delete {
 		fmt.Printf("\n\n ** Run again with --delete flag to actually delete the board(s).\n\n")
@@ -88,19 +100,19 @@ func main() {
 func removeBoard(board *trello.Board, user *trello.Member) {
 	if args.Delete {
 		if board.IsAdmin(user) {
-			fmt.Printf("DELETING: %s\t<%s>\n", board.Name, board.ShortURL)
+			fmt.Fprintf(w, "\tDELETING\t%s\t<%s>\n", board.Name, board.ShortURL)
 			err := board.Delete()
 			if err != nil {
 				fmt.Printf("ERROR Deleting board: %v\n", err)
 			}
 		} else {
-			fmt.Printf("LEAVING: %s\t<%s>\n", board.Name, board.ShortURL)
+			fmt.Fprintf(w, "\tLEAVING\t%s\t<%s>\n", board.Name, board.ShortURL)
 			err := board.RemoveMember(user)
 			if err != nil {
 				fmt.Printf("ERROR Leaving board: %v\n", err)
 			}
 		}
 	} else {
-		fmt.Printf("Delete: %s\t<%s>\n", board.Name, board.ShortURL)
+		fmt.Fprintf(w, "\tDelete\t%s\t<%s>\n", board.Name, board.ShortURL)
 	}
 }
